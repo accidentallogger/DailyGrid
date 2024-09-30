@@ -69,7 +69,7 @@ A web application designed to help users manage their daily schedules efficientl
    - Add periods through the UI. Enter the start and end times using the dropdown (in 24-hour format).
    - Ensure no overlap between periods. An error will be shown if overlapping times are detected.
 
-2. **Upload Timetable as Image**: 
+2. **Upload Timetable as Image**(Experimental): 
    - Use the "Upload Timetable" button to upload an image file (JPEG/PNG). The app will parse the image into structured data using OCR.
 
 3. **View Current Period**: 
