@@ -14,25 +14,71 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/csv"
-    "os/exec"
+
 	"github.com/xuri/excelize/v2"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
-func runpdf(pdfPath, excelPath string) error {
-	// Define the command to run the Python script with arguments
-	cmd := exec.Command("python3", "pdf-to-excel.py", pdfPath, excelPath)
 
-	// Run the command and capture its output
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("error running Python script: %v, output: %s", err, string(output))
-	}
-	return readTimetableFromExcel(excelPath)
-	
+
+
+type Holiday struct {
+    Day string
 }
+
+var holidays = map[string]bool{
+    "Monday":    false,
+    "Tuesday":   false,
+    "Wednesday": false,
+    "Thursday":  false,
+    "Friday":    false,
+    "Saturday":  false,
+    "Sunday":    false,
+}
+
+func markHolidayHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method == "POST" {
+        r.ParseForm()
+        selectedDay := r.FormValue("holidayDay")
+        userID := getUserIDFromSession(r)
+        
+        if _, ok := holidays[selectedDay]; ok {
+            holidays[selectedDay] = true // Mark the selected day as a holiday
+
+            // Delete the timetable for the selected day from the database for the current user
+            _, err := db.Exec(`DELETE FROM timetables WHERE user_id = ? AND day = ?`, userID, selectedDay)
+            if err != nil {
+                http.Error(w, "Failed to clear timetable for the holiday", http.StatusInternalServerError)
+                return
+            }
+
+            // Remove periods for the selected day from the in-memory timetable object
+            timetable.Periods = filterOutPeriodsByDay(timetable.Periods, selectedDay)
+            timetable.Gaps = filterOutPeriodsByDay(timetable.Gaps, selectedDay)
+
+            fmt.Fprintf(w, "Successfully marked %s as a holiday and cleared its schedule!", selectedDay)
+        } else {
+            http.Error(w, "Invalid day selected", http.StatusBadRequest)
+        }
+    } else {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+    }
+}
+
+// Helper function to filter out periods by day from the timetable
+func filterOutPeriodsByDay(periods []TimePeriod, day string) []TimePeriod {
+    var filtered []TimePeriod
+    for _, period := range periods {
+        if period.Day != day {
+            filtered = append(filtered, period)
+        }
+    }
+    return filtered
+}
+
+
 func clearTimetableHandler(w http.ResponseWriter, r *http.Request) {
     userID := getUserIDFromSession(r)
     if userID == 0 {
@@ -144,7 +190,7 @@ func main() {
 	http.HandleFunc("/register", registerHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/logout", logoutHandler)
-
+http.HandleFunc("/markHoliday", markHolidayHandler)
 	// Protected routes
 	http.Handle("/", authMiddleware(http.HandlerFunc(renderForm)))
 	http.Handle("/add", authMiddleware(http.HandlerFunc(addTimePeriod)))
@@ -156,6 +202,7 @@ func main() {
 
 	http.ListenAndServe(":8080", nil)
 }
+
 
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -296,7 +343,7 @@ func fitActivitiesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	duration := time.Duration(durationMinutes) * time.Minute
 	day := r.FormValue("day")
-	timePart := r.FormValue("timePart")
+	timePart := r.FormValue("partOfDay")
 
 	activity := TimePeriod{
 		Name:     name,
@@ -750,11 +797,6 @@ func uploadTimetableHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to read Excel file", http.StatusInternalServerError)
 			return
 		}
-	}else if ext == ".pdf"{
-		if err := runpdf(filePath,"demo.xlsx"); err!=nil{
-			http.Error(w, "Failed to read pdf file", http.StatusInternalServerError)
-			return
-		}
 	}
 	calculateGaps()
 
@@ -773,4 +815,3 @@ var dayOrder = map[string]int{
 	"Saturday":  5,
 	"Sunday":    6,
 }
-

@@ -9,7 +9,11 @@
 <body>
 
     <style>
-    
+    tr[data-start][style*="background-color"] {
+    font-weight: bold;
+    color: #000;
+}
+
         /* General styles */
         body {
             font-family: Arial, sans-serif;
@@ -21,6 +25,9 @@
         }
 
         h1 {
+            color: #333;
+        }
+h2 {
             color: #333;
         }
 
@@ -60,10 +67,10 @@
         }
 
         /* Table styles */
-        table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+        table {
         }
 
         th, td {
@@ -264,8 +271,8 @@
 
 
 <div id="full">
-<div id="current-period" class="current-period" hx-get="/current-period">
-        Loading current period...
+<div id="current-period" class="current-period">
+
         
     </div>
     <!-- Sidebar -->
@@ -294,10 +301,42 @@
             <span>clear timetable</span>
         </button>
         
-        <button hx-post="/markholiday">
+        <button  onclick="openHolidayModal()">
             <img src="https://img.icons8.com/?size=100&id=BGRjeiUFAoiH&format=png&color=FFFFFF" alt="mark holiday icon" class="icon">
             <span>mark holiday</span>
         </button>
+<div id="holidayModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeHolidayModal()">&times;</span>
+        <h2>Mark a Day as Holiday</h2>
+        <form hx-post="/markHoliday" hx-target="#mainContent" hx-swap="outerHTML">
+            <label for="holidayDay">Select Day:</label>
+            <select id="holidayDay" name="holidayDay">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+
+            <input type="submit" value="Mark as Holiday">
+        </form>
+    </div>
+</div>
+
+<script>
+    // Open the holiday modal
+    function openHolidayModal() {
+        document.getElementById("holidayModal").style.display = "block";
+    }
+
+    // Close the holiday modal
+    function closeHolidayModal() {
+        document.getElementById("holidayModal").style.display = "none";
+    }
+</script>
         
         <div class="profile-icon">
             <button hx-get="/profile" hx-target="#mainContent" hx-swap="outerHTML">
@@ -389,8 +428,9 @@
                 </form>
             </div>
         </div>
+        
 
-         <div id="timetable">
+        <div id="timetable">
             <!-- Timetable content will be dynamically updated here -->            
             {{ if .Periods }}
                 <h2>Timetable</h2>
@@ -404,17 +444,18 @@
                             <th>Duration</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {{ range .Periods }}
-                        <tr>
-                            <td>{{ .Day }}</td>
-                            <td>{{ .Name }}</td>
-                            <td>{{ .Start.Format "15:04" }}</td>
-                            <td>{{ .End.Format "15:04" }}</td>
-                            <td>{{ .Duration }}</td>
-                        </tr>
-                        {{ end }}
-                    </tbody>
+                    <tbody id="timetable-body">
+    {{ range .Periods }}
+    <tr data-start="{{ .Start.Format "15:04" }}" data-end="{{ .End.Format "15:04" }}" data-day="{{ .Day }}">
+        <td>{{ .Day }}</td>
+        <td>{{ .Name }}</td>
+        <td>{{ .Start.Format "15:04" }}</td>
+        <td>{{ .End.Format "15:04" }}</td>
+        <td>{{ .Duration }}</td>
+    </tr>
+    {{ end }}
+</tbody>
+
                 </table>
             {{ else }}
                 <p>No periods added yet.</p>
@@ -446,6 +487,11 @@
         </div>
     </div>
         </div>
+
+
+         
+    </div>
+        </div>
     
     </div>
 </div>
@@ -473,7 +519,73 @@
                 modal.style.display = "none";
             }
         }
+        document.addEventListener("DOMContentLoaded", function() {
+            // HTMX request to update the current period every 1 minute
+            setInterval(function() {
+                htmx.ajax('GET', '/current-period', {target: '#full', swap: 'outerHTML'});
+            }, 30000); // 60000 ms = 1 minute
+        });
+
     </script>
+    
+<script>
+    // Function to get the current day name (e.g., "Monday", "Tuesday")
+    function getCurrentDayName() {
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const now = new Date();
+        return days[now.getDay()];
+    }
+
+    function highlightCurrentPeriod() {
+        const currentTime = new Date(); // Get the current time
+        const currentHours = currentTime.getHours();
+        const currentMinutes = currentTime.getMinutes();
+        const currentDay = getCurrentDayName(); // Get the current day
+
+        const timetableRows = document.querySelectorAll('#timetable-body tr');
+        let currentPeriodText = 'No ongoing period'; // Default text if no period is active
+
+        timetableRows.forEach(row => {
+            const periodDay = row.getAttribute('data-day'); // Get the period's day
+            const startTime = row.getAttribute('data-start');
+            const endTime = row.getAttribute('data-end');
+            
+            // Only proceed if the current day matches the period's day
+            if (periodDay !== currentDay) {
+                row.style.backgroundColor = ''; // Reset row if it's not the current day
+                return;
+            }
+
+            const [startHours, startMinutes] = startTime.split(':').map(Number);
+            const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+            // Convert times to minutes for easier comparison
+            const currentTotalMinutes = currentHours * 60 + currentMinutes;
+            const startTotalMinutes = startHours * 60 + startMinutes;
+            const endTotalMinutes = endHours * 60 + endMinutes;
+
+            // Check if the current time is between the start and end time for the current day
+            if (currentTotalMinutes >= startTotalMinutes && currentTotalMinutes < endTotalMinutes) {
+                row.style.backgroundColor = 'cyan'; // Highlight the row
+                currentPeriodText = `Current Period: ${row.textContent.trim()} (${startTime} - ${endTime})`; // Update current period text
+            } else {
+                row.style.backgroundColor = ''; // Reset the row if not in the current period
+            }
+        });
+        
+        // Update the div with the current period information
+        document.getElementById('current-period').textContent = currentPeriodText;
+    }
+
+    // Run the highlight function initially and then every minute
+    highlightCurrentPeriod();
+    setInterval(highlightCurrentPeriod, 60000); // Update every minute
+
+    // Additional functionality (if any) can go here
+    // For example, if you want to initialize the timetable, load events, etc.
+</script>
+
+ 	
 </body>
 </html>
 

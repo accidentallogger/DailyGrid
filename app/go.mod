@@ -5,12 +5,14 @@ go 1.23
 toolchain go1.23.0
 
 require (
+	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
@@ -22,7 +24,7 @@ require (
 	github.com/xuri/efp v0.0.0-20231025114914-d1ff6096ae53 // indirect
 	github.com/xuri/excelize/v2 v2.8.1 // indirect
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05 // indirect
-	gocv.io/x/gocv v0.37.0 // indirect
+	gocv.io/x/gocv v0.38.0 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/image v0.14.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
