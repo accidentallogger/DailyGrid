@@ -129,9 +129,5 @@ We welcome contributions from the community! If you'd like to contribute:
 
 Please ensure your code follows the existing style and conventions.
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
-
 ---
 
