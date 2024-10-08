@@ -107,9 +107,9 @@ To upload timetables via CSV or Excel:
     | 08:00 to 09:00 | Math          | Physics      | ... |
     | 09:00 to 10:00 | Chemistry     | Math         | ... |
 
-## OCR Integration
+## TODO: OCR Integration 
 
-This app uses OCR (Optical Character Recognition) to parse timetable images and convert them into structured periods. To enable this feature, ensure that the `OCR_API_KEY` is set in your environment variables.
+This app should use OCR (Optical Character Recognition) to parse timetable images and convert them into structured periods. To enable this feature, ensure that the `OCR_API_KEY` is set in your environment variables.
 
 - **API Key Setup**: Set up your OCR API key in the `.env` file or as an environment variable:
 
@@ -117,17 +117,5 @@ This app uses OCR (Optical Character Recognition) to parse timetable images and 
    export OCR_API_KEY=your_ocr_api_key
    ```
 
-## Contributing
 
-We welcome contributions from the community! If you'd like to contribute:
-
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature-branch`).
-3. Commit your changes (`git commit -m 'Add new feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Open a pull request.
-
-Please ensure your code follows the existing style and conventions.
-
----
 
