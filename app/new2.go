@@ -23,10 +23,13 @@ type Task struct {
 }
 
 type Goal struct {
-	Title string `json:"title"`
-	Days  int    `json:"days"`
-	Tasks []Task `json:"tasks"`
+	ID     int
+	Title  string
+	Days   int
+	Tasks  []Task
+	UserID int // Add UserID to associate with a user
 }
+
 
 // User structure for user authentication
 type User struct {
@@ -78,12 +81,14 @@ func createTables() {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS goals (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		title TEXT NOT NULL,
-		days INTEGER NOT NULL,
-		tasks TEXT NOT NULL
-	);`)
+_, err = db.Exec(`CREATE TABLE IF NOT EXISTS goals (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	title TEXT NOT NULL,
+	days INTEGER NOT NULL,
+	tasks TEXT NOT NULL,
+	user_id INTEGER NOT NULL,
+	FOREIGN KEY (user_id) REFERENCES users(id)
+);`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,33 +167,14 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/?success=1", http.StatusSeeOther)
 }
 
-func handleGoalsPage(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("session_id")
-	if err != nil || sessionStore[cookie.Value] == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	tmpl, err := template.ParseFiles("goals.html")
+func fetchGoals(username string) ([]Goal, error) {
+	var userID int
+	err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
 	if err != nil {
-		http.Error(w, "Error parsing template", http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
-	goals, err := fetchGoals()
-	if err != nil {
-		http.Error(w, "Error fetching goals", http.StatusInternalServerError)
-		return
-	}
-
-	err = tmpl.Execute(w, goals)
-	if err != nil {
-		http.Error(w, "Error rendering template", http.StatusInternalServerError)
-	}
-}
-
-func fetchGoals() ([]Goal, error) {
-	rows, err := db.Query("SELECT title, days, tasks FROM goals")
+	rows, err := db.Query("SELECT title, days, tasks FROM goals WHERE user_id = ?", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,10 +192,41 @@ func fetchGoals() ([]Goal, error) {
 			return nil, err
 		}
 		g.Tasks = tasks
+		g.UserID = userID // Set the user ID
 		goals = append(goals, g)
 	}
 	return goals, nil
 }
+
+// Update the handleGoalsPage function
+func handleGoalsPage(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_id")
+	if err != nil || sessionStore[cookie.Value] == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	tmpl, err := template.ParseFiles("goals.html")
+	if err != nil {
+		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+		return
+	}
+
+	// Fetch goals for the logged-in user
+	goals, err := fetchGoals(sessionStore[cookie.Value])
+	if err != nil {
+		http.Error(w, "Error fetching goals", http.StatusInternalServerError)
+		return
+	}
+
+	err = tmpl.Execute(w, goals)
+	if err != nil {
+		http.Error(w, "Error rendering template", http.StatusInternalServerError)
+	}
+}
+
+
+
 
 func handleAddGoal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -232,6 +249,21 @@ func handleAddGoal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the user ID from the session
+	cookie, err := r.Cookie("session_id")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	username := sessionStore[cookie.Value]
+
+	var userID int
+	err = db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&userID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusInternalServerError)
+		return
+	}
+
 	tasks := generateTasksForGoal(goalTitle, days)
 
 	var taskList []Task
@@ -245,7 +277,7 @@ func handleAddGoal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = db.Exec("INSERT INTO goals (title, days, tasks) VALUES (?, ?, ?)", goalTitle, days, tasksJSON)
+	_, err = db.Exec("INSERT INTO goals (title, days, tasks, user_id) VALUES (?, ?, ?, ?)", goalTitle, days, tasksJSON, userID)
 	if err != nil {
 		http.Error(w, "Error saving goal", http.StatusInternalServerError)
 		return
@@ -253,6 +285,7 @@ func handleAddGoal(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
+
 
 func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

@@ -149,7 +149,12 @@
         });
 
 function updateTaskStatus(task) {
-    const newStatus = task.dataset.status;
+    const newContainer = task.parentElement; // Get the new container
+    const newStatus = newContainer.classList[0]; // Use the first class name to determine the status
+
+    // Update the data-status attribute
+    task.dataset.status = newStatus;
+
     // Send the updated status to the server
     fetch('/update-task', {
         method: 'POST',
@@ -157,10 +162,13 @@ function updateTaskStatus(task) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            title: task.innerText,
+            goalTitle: newContainer.parentElement.querySelector('.goal-title').innerText, // Get the goal title
+            taskTitle: task.innerText,
             status: newStatus,
         }),
     });
+}
+
 }
 
     </script>
