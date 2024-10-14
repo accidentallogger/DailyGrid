@@ -286,63 +286,63 @@ func handleAddGoal(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-
 func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+        return
+    }
 
-	var updateData struct {
-		GoalTitle string `json:"goalTitle"`
-		TaskTitle string `json:"taskTitle"`
-		Status    string `json:"status"`
-	}
+    var updateData struct {
+        GoalTitle string `json:"goalTitle"`
+        TaskTitle string `json:"taskTitle"`
+        Status    string `json:"status"`
+    }
 
-	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+    if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
 
-	// Fetch the goal from the database
-	var tasksJSON string
-	err := db.QueryRow("SELECT tasks FROM goals WHERE title = ?", updateData.GoalTitle).Scan(&tasksJSON)
-	if err != nil {
-		http.Error(w, "Goal not found", http.StatusNotFound)
-		return
-	}
+    // Fetch the current tasks for the goal
+    var tasksJSON string
+    err := db.QueryRow("SELECT tasks FROM goals WHERE title = ?", updateData.GoalTitle).Scan(&tasksJSON)
+    if err != nil {
+        http.Error(w, "Goal not found", http.StatusNotFound)
+        return
+    }
 
-	// Unmarshal the tasks from JSON
-	var tasks []Task
-	if err := json.Unmarshal([]byte(tasksJSON), &tasks); err != nil {
-		http.Error(w, "Error decoding tasks", http.StatusInternalServerError)
-		return
-	}
+    // Unmarshal the tasks from JSON
+    var tasks []Task
+    if err := json.Unmarshal([]byte(tasksJSON), &tasks); err != nil {
+        http.Error(w, "Error decoding tasks", http.StatusInternalServerError)
+        return
+    }
 
-	// Update the status of the specified task
-	for i, task := range tasks {
-		if task.Title == updateData.TaskTitle {
-			tasks[i].Status = updateData.Status
-			break
-		}
-	}
+    // Update the status of the specified task
+    for i, task := range tasks {
+        if task.Title == updateData.TaskTitle {
+            tasks[i].Status = updateData.Status
+            break
+        }
+    }
 
-	// Marshal the updated tasks back to JSON
-	updatedTasksJSON, err := json.Marshal(tasks)
-	if err != nil {
-		http.Error(w, "Error encoding updated tasks", http.StatusInternalServerError)
-		return
-	}
+    // Marshal the updated tasks back to JSON
+    updatedTasksJSON, err := json.Marshal(tasks)
+    if err != nil {
+        http.Error(w, "Error encoding updated tasks", http.StatusInternalServerError)
+        return
+    }
 
-	// Update the goal in the database
-	_, err = db.Exec("UPDATE goals SET tasks = ? WHERE title = ?", updatedTasksJSON, updateData.GoalTitle)
-	if err != nil {
-		http.Error(w, "Error updating goal", http.StatusInternalServerError)
-		return
-	}
+    // Update the goal in the database
+    _, err = db.Exec("UPDATE goals SET tasks = ? WHERE title = ?", updatedTasksJSON, updateData.GoalTitle)
+    if err != nil {
+        http.Error(w, "Error updating goal", http.StatusInternalServerError)
+        return
+    }
 
-	w.WriteHeader(http.StatusNoContent)
+    w.WriteHeader(http.StatusNoContent)
 }
+
 
 
 func generateTasksForGoal(goalTitle string, days int) []string {
@@ -354,7 +354,7 @@ func generateTasksForGoal(goalTitle string, days int) []string {
 		return nil
 	}
 
-	prompt := fmt.Sprintf("Give me day-by-day tasks to achieve the goal: '%s' in '%d' days. Return the array of steps just titles and put them in one line for each day the list should be like day1:, day2:, day3:, etc. Skip any introduction line. just give me the array and nothing else as output ever again. every array must start with a good or bad or maybe to show if it is feasible or not to achieve the goal in that many days",
+	prompt := fmt.Sprintf("Give me day-by-day tasks to achieve the goal: '%s' in '%d' days. Return the array of steps just titles and put them in one line for each day the list should be like day1:, day2:, day3:, etc. Skip any introduction line. just give me the array and nothing else as output ever again.",
 		goalTitle, days)
 
 	_, err := llm.Call(ctx, prompt,
