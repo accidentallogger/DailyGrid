@@ -3,135 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Goals and Tasks - Drag and Drop</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://unpkg.com/htmx.org@1.9.3"></script> <!-- Include HTMX -->
+    <title>Goals and Tasks</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        body {
-            max-width: 500px;
-            margin: auto;
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f4f4f4; 
+            color: #333; 
         }
-        /* Your CSS here */
-        .container {
-            display: flex;
-            justify-content: space-between;
+        h1, h2 { 
+            color: #4CAF50; 
         }
-        .column {
-            width: 30%;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
+        .goal { 
+            background-color: white; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+            margin-bottom: 30px; 
+            padding: 20px; 
         }
-        .dropzone {
-            min-height: 100px;
-            background: #f9f9f9;
-            border: 2px dashed #ccc;
-            padding: 10px;
+        .goal-title { 
+            font-weight: bold; 
+            font-size: 1.2em; 
         }
-        .task {
-            padding: 5px;
-            margin: 5px 0;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            cursor: move;
+        .tasks-container { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-top: 10px; 
         }
-        .over {
-            background: #e9e9e9;
+        .todo, .done, .backlog { 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            padding: 10px; 
+            margin-right: 20px; 
+            width: 30%; 
+            background-color: #f9f9f9; 
+        }
+        .backlog { 
+            background-color: #FFCCCC; 
+            color: #C0392B; 
+        }
+        .task { 
+            margin-bottom: 5px; 
+            padding: 10px; 
+            background: #e7f3fe; 
+            color: #31708f; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: background 0.3s; 
+        }
+        .task:hover { 
+            background: #d0e6f9; 
+        }
+        .task.dragging { 
+            opacity: 0.5; 
+        }
+        form { 
+            margin-bottom: 40px; 
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%; 
+            padding: 8px; 
+            margin: 5px 0; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+        }
+        button { 
+            background-color: #4CAF50; 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background-color: #45a049; 
         }
     </style>
 </head>
-<body hx-get="/app2" hx-trigger="load" hx-target="body">
-
+<body>
     <h1>Goals and Tasks</h1>
 
     <!-- Form to input new goal -->
-    <form action="/add-goal" method="POST" hx-target="body" hx-swap="innerHTML">
+    <form action="/add-goal" method="POST">
         <label for="goalTitle">Goal Title:</label><br>
-        <input type="text" id="goalTitle" name="goalTitle" required><br><br>
+        <input type="text" id="goalTitle" name="goalTitle" required><br>
         <label for="days">Number of Days:</label><br>
-        <input type="number" id="days" name="days" required><br><br>
+        <input type="number" id="days" name="days" required><br>
         <button type="submit">Add Goal</button>
     </form>
 
-    <!-- Container for Backlog, Today, and Done columns -->
-    <div class="container">
-        <!-- Backlog Column -->
-        <div class="column" id="backlog-column">
-            <h2>Backlog</h2>
-            <div class="dropzone" id="backlog-tasks">
-                <!-- Backlog tasks will load here -->
-                <div class="task" data-id="1" draggable="true">Backlog Task 1</div>
-                <div class="task" data-id="2" draggable="true">Backlog Task 2</div>
+    <!-- Display Goals -->
+    {{ if . }}
+        <h2>Your Goals</h2>
+        {{ range . }}
+        <div class="goal">
+            <p class="goal-title">Goal: {{ .Title }} ({{ .Days }} days)</p>
+            <div class="tasks-container">
+                <div class="todo" id="todo-{{ .Title | urlquery }}">
+                    <h3>To Do</h3>
+                    {{ range .Tasks }}
+                    <div class="task" data-status="todo" draggable="true">{{ . }}</div>
+                    {{ end }}
+                </div>
+                <div class="done" id="done-{{ .Title | urlquery }}">
+                    <h3>Done</h3>
+                </div>
+                <div class="backlog" id="backlog-{{ .Title | urlquery }}">
+                    <h3>Backlog</h3>
+                </div>
             </div>
         </div>
-
-        <!-- Today Column -->
-        <div class="column" id="today-column">
-            <h2>Today's Work</h2>
-            <div class="dropzone" id="today-tasks">
-                <!-- Today's tasks will load here -->
-                <div class="task" data-id="3" draggable="true">Today's Task 1</div>
-                <div class="task" data-id="4" draggable="true">Today's Task 2</div>
-            </div>
-        </div>
-
-        <!-- Done Column -->
-        <div class="column" id="done-column">
-            <h2>Done</h2>
-            <div class="dropzone" id="done-tasks">
-                <!-- Done tasks will load here -->
-                <div class="task" data-id="5" draggable="true">Done Task 1</div>
-                <div class="task" data-id="6" draggable="true">Done Task 2</div>
-            </div>
-        </div>
-    </div>
+        {{ end }}
+    {{ else }}
+        <p>No goals added yet. Use the form above to add a goal.</p>
+    {{ end }}
 
     <script>
-        // Drag and drop logic for tasks
-        document.querySelectorAll('.dropzone').forEach(dropzone => {
-            dropzone.addEventListener('dragover', (event) => {
-                event.preventDefault();
-                dropzone.classList.add('over');
+        const tasks = document.querySelectorAll('.task');
+        const todoContainers = document.querySelectorAll('.todo');
+        const doneContainers = document.querySelectorAll('.done');
+        const backlogContainers = document.querySelectorAll('.backlog');
+
+        tasks.forEach(task => {
+            task.addEventListener('dragstart', () => {
+                task.classList.add('dragging');
             });
 
-            dropzone.addEventListener('dragleave', () => {
-                dropzone.classList.remove('over');
-            });
-
-            dropzone.addEventListener('drop', (event) => {
-                event.preventDefault();
-                const task = document.querySelector('.dragging');
-                const newStatus = dropzone.id.replace('-tasks', '');
-
-                // Update task status
-                const taskId = task.getAttribute('data-id');
-                const formData = new FormData();
-                formData.append('status', newStatus);
-                fetch(`/update-task/${taskId}`, {
-                    method: 'POST',
-                    body: formData
-                }).then(() => {
-                    dropzone.appendChild(task);
-                    dropzone.classList.remove('over');
-                });
+            task.addEventListener('dragend', () => {
+                task.classList.remove('dragging');
+                updateTaskStatus(task);
             });
         });
 
-        // Task dragging event listeners
-        document.addEventListener('dragstart', (event) => {
-            if (event.target.classList.contains('task')) {
-                event.target.classList.add('dragging');
-            }
+        [...todoContainers, ...doneContainers, ...backlogContainers].forEach(container => {
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            container.addEventListener('drop', (e) => {
+                const draggingTask = document.querySelector('.dragging');
+                if (draggingTask) {
+                    container.appendChild(draggingTask);
+                }
+            });
         });
 
-        document.addEventListener('dragend', (event) => {
-            if (event.target.classList.contains('task')) {
-                event.target.classList.remove('dragging');
-            }
-        });
+function updateTaskStatus(task) {
+    const newStatus = task.dataset.status;
+    // Send the updated status to the server
+    fetch('/update-task', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: task.innerText,
+            status: newStatus,
+        }),
+    });
+}
+
     </script>
-
 </body>
 </html>
 

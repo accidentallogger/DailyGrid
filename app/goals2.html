@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals</title>
+</head>
+<body>
+    <h1>Your Goals</h1>
+    <ul>
+        {{range .}}
+        <li>
+            <h2>{{.Title}} ({{.Days}} days)</h2>
+            <ul>
+                {{range .Tasks}}
+                <li>{{.Title}} - {{.State}}</li>
+                {{end}}
+            </ul>
+        </li>
+        {{end}}
+    </ul>
+    <h2>Add a new goal</h2>
+    <form action="/add-goal" method="POST">
+        <label>Goal Title:</label>
+        <input type="text" name="goalTitle" required><br>
+        <label>Days:</label>
+        <input type="number" name="days" required><br>
+        <button type="submit">Add Goal</button>
+    </form>
+    <a href="/logout">Logout</a>
+</body>
+</html>
