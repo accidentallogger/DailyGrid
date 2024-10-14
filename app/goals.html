@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals and Tasks - Drag and Drop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.3"></script> <!-- Include HTMX -->
+    <style>
+        body {
+            max-width: 500px;
+            margin: auto;
+        }
+        /* Your CSS here */
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .column {
+            width: 30%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .dropzone {
+            min-height: 100px;
+            background: #f9f9f9;
+            border: 2px dashed #ccc;
+            padding: 10px;
+        }
+        .task {
+            padding: 5px;
+            margin: 5px 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: move;
+        }
+        .over {
+            background: #e9e9e9;
+        }
+    </style>
+</head>
+<body hx-get="/app2" hx-trigger="load" hx-target="body">
+
+    <h1>Goals and Tasks</h1>
+
+    <!-- Form to input new goal -->
+    <form action="/add-goal" method="POST" hx-target="body" hx-swap="innerHTML">
+        <label for="goalTitle">Goal Title:</label><br>
+        <input type="text" id="goalTitle" name="goalTitle" required><br><br>
+        <label for="days">Number of Days:</label><br>
+        <input type="number" id="days" name="days" required><br><br>
+        <button type="submit">Add Goal</button>
+    </form>
+
+    <!-- Container for Backlog, Today, and Done columns -->
+    <div class="container">
+        <!-- Backlog Column -->
+        <div class="column" id="backlog-column">
+            <h2>Backlog</h2>
+            <div class="dropzone" id="backlog-tasks">
+                <!-- Backlog tasks will load here -->
+                <div class="task" data-id="1" draggable="true">Backlog Task 1</div>
+                <div class="task" data-id="2" draggable="true">Backlog Task 2</div>
+            </div>
+        </div>
+
+        <!-- Today Column -->
+        <div class="column" id="today-column">
+            <h2>Today's Work</h2>
+            <div class="dropzone" id="today-tasks">
+                <!-- Today's tasks will load here -->
+                <div class="task" data-id="3" draggable="true">Today's Task 1</div>
+                <div class="task" data-id="4" draggable="true">Today's Task 2</div>
+            </div>
+        </div>
+
+        <!-- Done Column -->
+        <div class="column" id="done-column">
+            <h2>Done</h2>
+            <div class="dropzone" id="done-tasks">
+                <!-- Done tasks will load here -->
+                <div class="task" data-id="5" draggable="true">Done Task 1</div>
+                <div class="task" data-id="6" draggable="true">Done Task 2</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Drag and drop logic for tasks
+        document.querySelectorAll('.dropzone').forEach(dropzone => {
+            dropzone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropzone.classList.add('over');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('over');
+            });
+
+            dropzone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                const task = document.querySelector('.dragging');
+                const newStatus = dropzone.id.replace('-tasks', '');
+
+                // Update task status
+                const taskId = task.getAttribute('data-id');
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                fetch(`/update-task/${taskId}`, {
+                    method: 'POST',
+                    body: formData
+                }).then(() => {
+                    dropzone.appendChild(task);
+                    dropzone.classList.remove('over');
+                });
+            });
+        });
+
+        // Task dragging event listeners
+        document.addEventListener('dragstart', (event) => {
+            if (event.target.classList.contains('task')) {
+                event.target.classList.add('dragging');
+            }
+        });
+
+        document.addEventListener('dragend', (event) => {
+            if (event.target.classList.contains('task')) {
+                event.target.classList.remove('dragging');
+            }
+        });
+    </script>
+
+</body>
+</html>
+

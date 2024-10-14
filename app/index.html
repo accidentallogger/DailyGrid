@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timetable Manager</title>
     <script src="https://unpkg.com/htmx.org@1.9.2"></script>
 </head>
+
 <body>
 
+
+
+    <div id="full" class="full">
+    
     <style>
-    tr[data-start][style*="background-color"] {
-    font-weight: bold;
-    color: #000;
-}
+        tr[data-start][style*="background-color"] {
+            font-weight: bold;
+            color: #000;
+        }
 
         /* General styles */
         body {
@@ -27,7 +33,8 @@
         h1 {
             color: #333;
         }
-h2 {
+
+        h2 {
             color: #333;
         }
 
@@ -47,7 +54,8 @@ h2 {
             width: calc(100% - 22px);
         }
 
-        input[type="submit"], button {
+        input[type="submit"],
+        button {
             padding: 10px 15px;
             border-radius: 5px;
             border: none;
@@ -57,7 +65,8 @@ h2 {
             width: calc(100% - 22px);
         }
 
-        input[type="submit"]:hover, button:hover {
+        input[type="submit"]:hover,
+        button:hover {
             background-color: blue;
         }
 
@@ -67,13 +76,14 @@ h2 {
         }
 
         /* Table styles */
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        table {
-        }
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
 
-        th, td {
+        table {}
+
+        th,
+        td {
             padding: 12px;
             text-align: left;
             border: 1px solid #ddd;
@@ -133,7 +143,8 @@ h2 {
         /* Sidebar styles */
         .sidebar {
             height: 100%;
-            width: 46px; /* Default width when collapsed */
+            width: 46px;
+            /* Default width when collapsed */
             background-color: blue;
             color: white;
             padding: 15px;
@@ -147,7 +158,8 @@ h2 {
         }
 
         .sidebar.expanded {
-            width: 250px; /* Width when expanded */
+            width: 250px;
+            /* Width when expanded */
         }
 
         .sidebar button {
@@ -176,30 +188,35 @@ h2 {
         }
 
         .sidebar.collapsed button span {
-            display: none; /* Hide text when collapsed */
+            display: none;
+            /* Hide text when collapsed */
         }
 
         .sidebar.expanded button span {
-            display: inline; /* Show text when expanded */
+            display: inline;
+            /* Show text when expanded */
         }
 
         /* Main content styles */
         .main-content {
-            margin-left: 46px; /* Default margin for collapsed sidebar */
+            margin-left: 46px;
+            /* Default margin for collapsed sidebar */
             padding: 60px;
             flex: 1;
             transition: margin-left 0.3s;
             min-width: 0;
         }
 
-        .sidebar.expanded ~ .main-content {
-            margin-left: 250px; /* Margin when sidebar is expanded */
+        .sidebar.expanded~.main-content {
+            margin-left: 250px;
+            /* Margin when sidebar is expanded */
         }
 
         @media screen and (max-width: 768px) {
-        .menu-icon {
-        display: none;
-    }
+            .menu-icon {
+                display: none;
+            }
+
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -233,11 +250,14 @@ h2 {
                 flex-direction: column;
             }
 
-            table, th, td {
+            table,
+            th,
+            td {
                 font-size: 14px;
             }
 
-            th, td {
+            th,
+            td {
                 padding: 8px;
             }
 
@@ -246,6 +266,7 @@ h2 {
                 padding: 15px;
             }
         }
+
         .profile-icon {
             bottom: 20px;
             left: 20px;
@@ -253,186 +274,185 @@ h2 {
             text-align: center;
         }
 
- .current-period {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background-color: #f8f9fa;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    font-size: 14px;
-    font-weight: bold;
-}
-
-
+        .current-period {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            font-weight: bold;
+        }
     </style>
+        <div id="current-period" class="current-period">
 
 
-<div id="full">
-<div id="current-period" class="current-period">
-
-        
-    </div>
-    <!-- Sidebar -->
-    
-    <div class="sidebar collapsed" id="sidebar">
-        <button class="menu-icon" onclick="toggleSidebar()">
-            <img src="https://img.icons8.com/?size=100&id=120374&format=png&color=FFFFFF" alt="Menu Icon" class="icon">
-            <span>Menu</span>
-        </button>
-        <button>
-            <img src="https://img.icons8.com/?size=100&id=364&format=png&color=FFFFFF" alt="Settings Icon" class="icon">
-            <span>Settings</span>
-        </button>
-        <button>
-            <img src="https://img.icons8.com/?size=100&id=6374&format=png&color=FFFFFF" alt="Edit Sleep Time Icon" class="icon">
-            <span>Edit Sleep Time</span>
-        </button>
-        
-        <button hx-post="/logout" hx-replace-url="/login" hx-target="#full" hx-swap="outerHTML">
-            <img src="https://img.icons8.com/?size=100&id=8119&format=png&color=FFFFFF" alt="logout icon" class="icon">
-            <span>logout</span>
-        </button>
-        
-        <button hx-post="/cleardb" hx-replace-url="/" hx-target="#full" hx-swap="outerHTML">
-            <img src="https://img.icons8.com/?size=100&id=49648&format=png&color=FFFFFF" alt="clear timetable icon" class="icon">
-            <span>clear timetable</span>
-        </button>
-        
-        <button  onclick="openHolidayModal()">
-            <img src="https://img.icons8.com/?size=100&id=BGRjeiUFAoiH&format=png&color=FFFFFF" alt="mark holiday icon" class="icon">
-            <span>mark holiday</span>
-        </button>
-<div id="holidayModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeHolidayModal()">&times;</span>
-        <h2>Mark a Day as Holiday</h2>
-        <form hx-post="/markHoliday" hx-target="#mainContent" hx-swap="outerHTML">
-            <label for="holidayDay">Select Day:</label>
-            <select id="holidayDay" name="holidayDay">
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
-
-            <input type="submit" value="Mark as Holiday">
-        </form>
-    </div>
-</div>
-
-<script>
-    // Open the holiday modal
-    function openHolidayModal() {
-        document.getElementById("holidayModal").style.display = "block";
-    }
-
-    // Close the holiday modal
-    function closeHolidayModal() {
-        document.getElementById("holidayModal").style.display = "none";
-    }
-</script>
-        
-        <div class="profile-icon">
-            <button hx-get="/profile" hx-target="#mainContent" hx-swap="outerHTML">
-            <img src="https://img.icons8.com/?size=100&id=7820&format=png&color=FFFFFF" alt="Edit Sleep Time Icon" class="icon">
-            <span>User-Profile</span>
-        </button>
-        </form>
         </div>
-        
-        
-    </div>
+        <!-- Sidebar -->
 
-    <!-- Main content -->
-    <div class="main-content" id="mainContent">
+        <div class="sidebar collapsed" id="sidebar">
+            <button class="menu-icon" onclick="toggleSidebar()">
+                <img src="https://img.icons8.com/?size=100&id=120374&format=png&color=FFFFFF" alt="Menu Icon"
+                    class="icon">
+                <span>Menu</span>
+            </button>
 
-        <h1>Manage Your Timetable</h1>
+            <button id="app2" hx-post="/app2" hx-replace-url="/app2" hx-target="#mainContent" hx-swap="outerHTML">
+                <img src="https://img.icons8.com/?size=100&id=60672&format=png&color=000000" alt="Achieve Goal Icon"
+                    class="icon">
+                <span>Achieve your goal</span>
+            </button>
 
-        <div>
-            <form hx-post="/uploadTimetable" enctype="multipart/form-data" hx-replace-url="/" hx-target="#full" hx-swap="outerHTML">
-                <label for="timetableImage">Upload Timetable Image:</label>
-                <input type="file" id="timetableImage" name="timetableImage" required>
-                <br><br>
-                <input type="submit" value="Upload">
-            </form>
-        </div>
-        
+            <button hx-post="/logout" hx-replace-url="/login" hx-target="#full" hx-swap="outerHTML">
+                <img src="https://img.icons8.com/?size=100&id=8119&format=png&color=FFFFFF" alt="logout icon"
+                    class="icon">
+                <span>logout</span>
+            </button>
 
-        <form hx-post="/add" hx-target="#mainContent" hx-swap="outerHTML">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
+            <button hx-post="/cleardb" hx-replace-url="/" hx-target="#full" hx-swap="outerHTML">
+                <img src="https://img.icons8.com/?size=100&id=49648&format=png&color=FFFFFF" alt="clear timetable icon"
+                    class="icon">
+                <span>clear timetable</span>
+            </button>
 
-            <label for="day">Day:</label>
-            <select id="day" name="day">
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
+            <button onclick="openHolidayModal()">
+                <img src="https://img.icons8.com/?size=100&id=BGRjeiUFAoiH&format=png&color=FFFFFF"
+                    alt="mark holiday icon" class="icon">
+                <span>mark holiday</span>
+            </button>
+            <div id="holidayModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeHolidayModal()">&times;</span>
+                    <h2>Mark a Day as Holiday</h2>
+                    <form hx-post="/markHoliday" hx-target="#mainContent" hx-swap="outerHTML">
+                        <label for="holidayDay">Select Day:</label>
+                        <select id="holidayDay" name="holidayDay">
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
 
-            <label for="start">Start Time:</label>
-            <input type="time" id="start" name="start" required>
+                        <input type="submit" value="Mark as Holiday">
+                    </form>
+                </div>
+            </div>
 
-            <label for="end">End Time:</label>
-            <input type="time" id="end" name="end" required>
+            <script>
+                // Open the holiday modal
+                function openHolidayModal() {
+                    document.getElementById("holidayModal").style.display = "block";
+                }
 
-            <input type="submit" value="Add Period">
-        </form>
+                // Close the holiday modal
+                function closeHolidayModal() {
+                    document.getElementById("holidayModal").style.display = "none";
+                }
+            </script>
 
-        <!-- Button to open the modal -->
-        <button onclick="openModal()">Add Activity</button>
-
-        <!-- The Modal -->
-        <div id="activityModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h2>Add Activities</h2>
-                <form hx-post="/fitActivities" hx-target="#mainContent" hx-swap="outerHTML">
-                    <label for="activityName">Activity Name:</label>
-                    <input type="text" id="activityName" name="activityName" required>
-
-                    <label for="duration">Duration (in minutes):</label>
-                    <input type="number" id="duration" name="duration" required>
-
-                    <label for="day">Preferred Day:</label>
-                    <select id="day" name="day">
-                        <option value="Any">Any</option>
-                        <option value="Monday">Monday</option>
-                        <option value="Tuesday">Tuesday</option>
-                        <option value="Wednesday">Wednesday</option>
-                        <option value="Thursday">Thursday</option>
-                        <option value="Friday">Friday</option>
-                        <option value="Saturday">Saturday</option>
-                        <option value="Sunday">Sunday</option>
-                    </select>
-
-                    <label for="partOfDay">Preferred Time of Day:</label>
-                    <select id="partOfDay" name="partOfDay">
-                        <option value="Any">Any</option>
-                        <option value="Morning">Morning</option>
-                        <option value="Afternoon">Afternoon</option>
-                        <option value="Evening">Evening</option>
-                        <option value="Night">Night</option>
-                    </select>
-
-                    <input type="submit" value="Add Activity">
+            <div class="profile-icon">
+                <button hx-get="/profile" hx-target="#mainContent" hx-swap="innerHTML">
+                    <img src="https://img.icons8.com/?size=100&id=7820&format=png&color=FFFFFF"
+                        alt="Edit Sleep Time Icon" class="icon">
+                    <span>User-Profile</span>
+                </button>
                 </form>
             </div>
-        </div>
-        
 
-        <div id="timetable">
-            <!-- Timetable content will be dynamically updated here -->            
-            {{ if .Periods }}
+
+        </div>
+
+        <!-- Main content -->
+        <div class="main-content" id="mainContent">
+
+            <h1>Manage Your Timetable</h1>
+
+            <div>
+                <form hx-post="/uploadTimetable" enctype="multipart/form-data" hx-replace-url="/" hx-target="#full"
+                    hx-swap="outerHTML">
+                    <label for="timetableImage">Upload Timetable Image:</label>
+                    <input type="file" id="timetableImage" name="timetableImage" required>
+                    <br><br>
+                    <input type="submit" value="Upload">
+                </form>
+            </div>
+
+
+            <form hx-post="/add" hx-target="#mainContent" hx-swap="outerHTML">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+
+                <label for="day">Day:</label>
+                <select id="day" name="day">
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                </select>
+
+                <label for="start">Start Time:</label>
+                <input type="time" id="start" name="start" required>
+
+                <label for="end">End Time:</label>
+                <input type="time" id="end" name="end" required>
+
+                <input type="submit" value="Add Period">
+            </form>
+
+            <!-- Button to open the modal -->
+            <button onclick="openModal()">Add Activity</button>
+
+            <!-- The Modal -->
+            <div id="activityModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closeModal()">&times;</span>
+                    <h2>Add Activities</h2>
+                    <form hx-post="/fitActivities" hx-target="#mainContent" hx-swap="outerHTML">
+                        <label for="activityName">Activity Name:</label>
+                        <input type="text" id="activityName" name="activityName" required>
+
+                        <label for="duration">Duration (in minutes):</label>
+                        <input type="number" id="duration" name="duration" required>
+
+                        <label for="day">Preferred Day:</label>
+                        <select id="day" name="day">
+                            <option value="Any">Any</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+
+                        <label for="partOfDay">Preferred Time of Day:</label>
+                        <select id="partOfDay" name="partOfDay">
+                            <option value="Any">Any</option>
+                            <option value="Morning">Morning</option>
+                            <option value="Afternoon">Afternoon</option>
+                            <option value="Evening">Evening</option>
+                            <option value="Night">Night</option>
+                        </select>
+
+                        <input type="submit" value="Add Activity">
+                    </form>
+                </div>
+            </div>
+
+
+            <div id="timetable">
+                <!-- Timetable content will be dynamically updated here -->
+                {{ if .Periods }}
                 <h2>Timetable</h2>
                 <table>
                     <thead>
@@ -445,23 +465,24 @@ h2 {
                         </tr>
                     </thead>
                     <tbody id="timetable-body">
-    {{ range .Periods }}
-    <tr data-start="{{ .Start.Format "15:04" }}" data-end="{{ .End.Format "15:04" }}" data-day="{{ .Day }}">
-        <td>{{ .Day }}</td>
-        <td>{{ .Name }}</td>
-        <td>{{ .Start.Format "15:04" }}</td>
-        <td>{{ .End.Format "15:04" }}</td>
-        <td>{{ .Duration }}</td>
-    </tr>
-    {{ end }}
-</tbody>
+                        {{ range .Periods }}
+                        <tr data-start="{{ .Start.Format " 15:04" }}" data-end="{{ .End.Format " 15:04" }}"
+                            data-day="{{ .Day }}">
+                            <td>{{ .Day }}</td>
+                            <td>{{ .Name }}</td>
+                            <td>{{ .Start.Format "15:04" }}</td>
+                            <td>{{ .End.Format "15:04" }}</td>
+                            <td>{{ .Duration }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
 
                 </table>
-            {{ else }}
+                {{ else }}
                 <p>No periods added yet.</p>
-            {{ end }}
+                {{ end }}
 
-            {{ if .Gaps }}
+                {{ if .Gaps }}
                 <h2>Gaps</h2>
                 <table>
                     <thead>
@@ -483,109 +504,108 @@ h2 {
                         {{ end }}
                     </tbody>
                 </table>
-            {{ end }}
+                {{ end }}
+            </div>
         </div>
-    </div>
-        </div>
 
 
-         
-    </div>
-        </div>
-    
-    </div>
-</div>
-    <script>
-        function openModal() {
-            document.getElementById("activityModal").style.display = "block";
-        }
 
-        function closeModal() {
-            document.getElementById("activityModal").style.display = "none";
-        }
-
-        function toggleSidebar() {
-            var sidebar = document.getElementById("sidebar");
-            var mainContent = document.getElementById("mainContent");
-
-            sidebar.classList.toggle("expanded");
-            sidebar.classList.toggle("collapsed");
-            mainContent.classList.toggle("expanded");
-        }
-
-        window.onclick = function(event) {
-            var modal = document.getElementById("activityModal");
-            if (event.target === modal) {
-                modal.style.display = "none";
-            }
-        }
-        document.addEventListener("DOMContentLoaded", function() {
-            // HTMX request to update the current period every 1 minute
-            setInterval(function() {
-                htmx.ajax('GET', '/current-period', {target: '#full', swap: 'outerHTML'});
-            }, 30000); // 60000 ms = 1 minute
-        });
-
-    </script>
-    
-<script>
-    // Function to get the current day name (e.g., "Monday", "Tuesday")
-    function getCurrentDayName() {
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const now = new Date();
-        return days[now.getDay()];
-    }
-
-    function highlightCurrentPeriod() {
-        const currentTime = new Date(); // Get the current time
-        const currentHours = currentTime.getHours();
-        const currentMinutes = currentTime.getMinutes();
-        const currentDay = getCurrentDayName(); // Get the current day
-
-        const timetableRows = document.querySelectorAll('#timetable-body tr');
-        let currentPeriodText = 'No ongoing period'; // Default text if no period is active
-
-        timetableRows.forEach(row => {
-            const periodDay = row.getAttribute('data-day'); // Get the period's day
-            const startTime = row.getAttribute('data-start');
-            const endTime = row.getAttribute('data-end');
-            
-            // Only proceed if the current day matches the period's day
-            if (periodDay !== currentDay) {
-                row.style.backgroundColor = ''; // Reset row if it's not the current day
-                return;
+        <script>
+            function openModal() {
+                document.getElementById("activityModal").style.display = "block";
             }
 
-            const [startHours, startMinutes] = startTime.split(':').map(Number);
-            const [endHours, endMinutes] = endTime.split(':').map(Number);
-
-            // Convert times to minutes for easier comparison
-            const currentTotalMinutes = currentHours * 60 + currentMinutes;
-            const startTotalMinutes = startHours * 60 + startMinutes;
-            const endTotalMinutes = endHours * 60 + endMinutes;
-
-            // Check if the current time is between the start and end time for the current day
-            if (currentTotalMinutes >= startTotalMinutes && currentTotalMinutes < endTotalMinutes) {
-                row.style.backgroundColor = 'cyan'; // Highlight the row
-                currentPeriodText = `Current Period: ${row.textContent.trim()} (${startTime} - ${endTime})`; // Update current period text
-            } else {
-                row.style.backgroundColor = ''; // Reset the row if not in the current period
+            function closeModal() {
+                document.getElementById("activityModal").style.display = "none";
             }
-        });
-        
-        // Update the div with the current period information
-        document.getElementById('current-period').textContent = currentPeriodText;
-    }
 
-    // Run the highlight function initially and then every minute
-    highlightCurrentPeriod();
-    setInterval(highlightCurrentPeriod, 60000); // Update every minute
+            function toggleSidebar() {
+                var sidebar = document.getElementById("sidebar");
+                var mainContent = document.getElementById("mainContent");
 
-    // Additional functionality (if any) can go here
-    // For example, if you want to initialize the timetable, load events, etc.
-</script>
+                sidebar.classList.toggle("expanded");
+                sidebar.classList.toggle("collapsed");
+                mainContent.classList.toggle("expanded");
+            }
 
- 	
+            window.onclick = function (event) {
+                var modal = document.getElementById("activityModal");
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            }
+            document.addEventListener("DOMContentLoaded", function () {
+                // HTMX request to update the current period every 1 minute
+                setInterval(function () {
+                    htmx.ajax('GET', '/current-period', { target: '#full', swap: 'outerHTML' });
+                }, 30000); // 60000 ms = 1 minute
+            });
+
+        </script>
+
+        <script>
+            // Function to get the current day name (e.g., "Monday", "Tuesday")
+            function getCurrentDayName() {
+                const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                const now = new Date();
+                return days[now.getDay()];
+            }
+
+            function highlightCurrentPeriod() {
+                const currentTime = new Date(); // Get the current time
+                const currentHours = currentTime.getHours();
+                const currentMinutes = currentTime.getMinutes();
+                const currentDay = getCurrentDayName(); // Get the current day
+
+                const timetableRows = document.querySelectorAll('#timetable-body tr');
+                let currentPeriodText = 'No ongoing period'; // Default text if no period is active
+
+                timetableRows.forEach(row => {
+                    const periodDay = row.getAttribute('data-day'); // Get the period's day
+                    const startTime = row.getAttribute('data-start');
+                    const endTime = row.getAttribute('data-end');
+
+                    // Only proceed if the current day matches the period's day
+                    if (periodDay !== currentDay) {
+                        row.style.backgroundColor = ''; // Reset row if it's not the current day
+                        return;
+                    }
+
+                    const [startHours, startMinutes] = startTime.split(':').map(Number);
+                    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+                    // Convert times to minutes for easier comparison
+                    const currentTotalMinutes = currentHours * 60 + currentMinutes;
+                    const startTotalMinutes = startHours * 60 + startMinutes;
+                    const endTotalMinutes = endHours * 60 + endMinutes;
+
+                    // Check if the current time is between the start and end time for the current day
+                    if (currentTotalMinutes >= startTotalMinutes && currentTotalMinutes < endTotalMinutes) {
+                        row.style.backgroundColor = 'cyan'; // Highlight the row
+                        currentPeriodText = `Current Period: ${row.textContent.trim()} (${startTime} - ${endTime})`; // Update current period text
+                    } else {
+                        row.style.backgroundColor = ''; // Reset the row if not in the current period
+                    }
+                });
+
+                // Update the div with the current period information
+                document.getElementById('current-period').textContent = currentPeriodText;
+            }
+
+            // Run the highlight function initially and then every minute
+            highlightCurrentPeriod();
+ 
+
+
+
+        </script>
+
+    </div>
+
+
+
+
+
 </body>
-</html>
 
+</html>

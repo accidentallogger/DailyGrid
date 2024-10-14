@@ -1,6 +1,7 @@
 package main
 
 import (
+"context"
 	"database/sql"
 	"fmt"
 	"html/template"
@@ -20,7 +21,125 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/ollama"
 )
+
+
+
+// Structure to store the goal and its daily tasks
+type Goal struct {
+	Title string
+	Days  int
+	Tasks []string
+}
+
+var goals []Goal // Store multiple goals
+var llm *ollama.LLM
+
+
+// Handle the request and serve the HTML page with goals and input form
+func handleGoalsPage(w http.ResponseWriter, r *http.Request) {
+	// Parse the external HTML file (goals.html)
+	tmpl, err := template.ParseFiles("goals.html")
+	if err != nil {
+		http.Error(w, "Error parsing template", http.StatusInternalServerError)
+		return
+	}
+
+	// Render the template with the current goals and tasks
+	err = tmpl.Execute(w, goals)
+	if err != nil {
+		http.Error(w, "Error rendering template"+err.Error(), http.StatusInternalServerError)
+	}
+}
+
+
+// Handle form submission to add a new goal
+func handleAddGoal(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form data", http.StatusInternalServerError)
+		return
+	}
+
+	goalTitle := r.FormValue("goalTitle")
+	daysStr := r.FormValue("days")
+
+	// Convert days to integer
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		http.Error(w, "Invalid number of days", http.StatusBadRequest)
+		return
+	}
+
+	// Generate tasks for the goal
+	tasks := generateTasksForGoal(goalTitle, days)
+
+	// Append the new goal and its tasks to the goals slice
+	goals = append(goals, Goal{
+		Title: goalTitle,
+		Days:  days,
+		Tasks: tasks,
+	})
+
+	// Redirect to the homepage to display the updated list of goals
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// Function to generate tasks for a given goal
+func generateTasksForGoal(goalTitle string, days int) []string {
+	ctx := context.Background()
+
+	// Buffer to collect the streamed response chunks
+	var responseBuffer strings.Builder
+
+	// Define a streaming function to collect the output
+	streamFunc := func(ctx context.Context, chunk []byte) error {
+		responseBuffer.Write(chunk) // Collecting the response chunks
+		return nil
+	}
+
+	// Create the prompt using the user's goal
+	prompt := fmt.Sprintf("Give me day-by-day tasks to achieve the goal: '%s' in '%d' days. Return the array of steps just titles and put them in one line for each day the list should be like day1:, day2:, day3:, etc. Skip any introduction line. just give me the array and nothing else as outfut ever again. every array must start with a good or bad or maybe to show if it is feasible or not to achive the goal in that many days",
+		goalTitle, days)
+
+	_, err := llm.Call(ctx, prompt,
+		llms.WithTemperature(0.8),
+		llms.WithStreamingFunc(streamFunc),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Once streaming is done, process the response
+	fullResponse := responseBuffer.String()
+
+	// Remove any leading or trailing whitespace
+	fullResponse = strings.TrimSpace(fullResponse)
+
+	// Remove brackets and split the response into daily tasks
+	fullResponse = strings.Trim(fullResponse, "[]") // Remove square brackets
+	tasks := strings.Split(fullResponse, "day")      // Split by commas
+
+	// Clean up any empty strings in the tasks
+	var dailyTasks []string
+	for _, task := range tasks {
+		if trimmed := strings.TrimSpace(task); trimmed != "" {
+			dailyTasks = append(dailyTasks, trimmed)
+		}
+	}
+
+	return dailyTasks
+}
+
 
 
 
@@ -200,7 +319,17 @@ http.HandleFunc("/markHoliday", markHolidayHandler)
 
 	http.Handle("/profile", authMiddleware(http.HandlerFunc(profileopen)))
 
-	http.ListenAndServe(":8080", nil)
+	var err error
+	llm, err = ollama.New(ollama.WithModel("llama3.2"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Start the HTTP server to handle user input and display goals
+	http.HandleFunc("/app2", handleGoalsPage)
+	http.HandleFunc("/add-goal", handleAddGoal)
+	fmt.Println("Server started at http://localhost:4080")
+	log.Fatal(http.ListenAndServe(":4080", nil))
 }
 
 
@@ -256,12 +385,10 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 
 
-func showtimetable(w http.ResponseWriter, r *http.Request) {
-	// Handle timetable upload
-}
+
 
 func profileopen(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "profile.html", http.StatusSeeOther)
+	http.Redirect(w, r, "index.html", http.StatusSeeOther)
 }
 
 func renderForm(w http.ResponseWriter, r *http.Request) {
@@ -815,3 +942,5 @@ var dayOrder = map[string]int{
 	"Saturday":  5,
 	"Sunday":    6,
 }
+
+
