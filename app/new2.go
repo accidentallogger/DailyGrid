@@ -261,8 +261,9 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var updateData struct {
-		Title  string `json:"title"`
-		Status string `json:"status"`
+		GoalTitle string `json:"goalTitle"`
+		TaskTitle string `json:"taskTitle"`
+		Status    string `json:"status"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&updateData); err != nil {
@@ -270,11 +271,46 @@ func handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Logic to update task in the database goes here
-	// This will require fetching the goal and modifying the task's status accordingly
+	// Fetch the goal from the database
+	var tasksJSON string
+	err := db.QueryRow("SELECT tasks FROM goals WHERE title = ?", updateData.GoalTitle).Scan(&tasksJSON)
+	if err != nil {
+		http.Error(w, "Goal not found", http.StatusNotFound)
+		return
+	}
+
+	// Unmarshal the tasks from JSON
+	var tasks []Task
+	if err := json.Unmarshal([]byte(tasksJSON), &tasks); err != nil {
+		http.Error(w, "Error decoding tasks", http.StatusInternalServerError)
+		return
+	}
+
+	// Update the status of the specified task
+	for i, task := range tasks {
+		if task.Title == updateData.TaskTitle {
+			tasks[i].Status = updateData.Status
+			break
+		}
+	}
+
+	// Marshal the updated tasks back to JSON
+	updatedTasksJSON, err := json.Marshal(tasks)
+	if err != nil {
+		http.Error(w, "Error encoding updated tasks", http.StatusInternalServerError)
+		return
+	}
+
+	// Update the goal in the database
+	_, err = db.Exec("UPDATE goals SET tasks = ? WHERE title = ?", updatedTasksJSON, updateData.GoalTitle)
+	if err != nil {
+		http.Error(w, "Error updating goal", http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 func generateTasksForGoal(goalTitle string, days int) []string {
 	ctx := context.Background()
