@@ -39,7 +39,7 @@ func main() {
 
 // Handle the request and serve the HTML page with goals and input form
 func handleGoalsPage(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.New("goals").Parse(
+	tmpl, err := template.New("goals").Parse(`
 				<!DOCTYPE html>
 		<html lang="en">
 		<head>
@@ -216,8 +216,7 @@ func handleGoalsPage(w http.ResponseWriter, r *http.Request) {
 
 		</body>
 		</html>
-
-	)
+	`)
 
 	if err != nil {
 		http.Error(w, "Error parsing template", http.StatusInternalServerError)
@@ -314,4 +313,3 @@ func generateTasksForGoal(goalTitle string, days int) []string {
 
 	return dailyTasks
 }
-

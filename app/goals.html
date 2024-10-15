@@ -200,16 +200,39 @@ tasks.forEach(task => {
     });
 });
 
+const tasks = document.querySelectorAll('.task');
+const containers = document.querySelectorAll('.todo, .done, .backlog');
+
+tasks.forEach(task => {
+    task.addEventListener('dragstart', () => {
+        task.classList.add('dragging');
+    });
+
+    task.addEventListener('dragend', () => {
+        task.classList.remove('dragging');
+    });
+});
+
+containers.forEach(container => {
+    container.addEventListener('dragover', (e) => {
+        e.preventDefault(); // Allow dropping
+    });
+
+    container.addEventListener('drop', (e) => {
+        const draggingTask = document.querySelector('.dragging');
+        if (draggingTask) {
+            container.appendChild(draggingTask);
+            updateTaskStatus(draggingTask, container);
+        }
+    });
+});
+
 function updateTaskStatus(task, container) {
     const newStatus = container.classList[0]; // Get the new status from the class
-
-    // Update the data-status attribute
     task.dataset.status = newStatus;
 
-    // Get the goal title from the parent element
     const goalTitle = task.closest('.goal').querySelector('.goal-title').innerText;
 
-    // Send the updated status to the server
     fetch('/update-task', {
         method: 'POST',
         headers: {
@@ -220,10 +243,16 @@ function updateTaskStatus(task, container) {
             taskTitle: task.innerText,
             status: newStatus,
         }),
-    });
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Failed to update task status:', response.statusText);
+        }
+    })
+    .catch(error => console.error('Error:', error));
 }
+
 
     </script>
 </body>
 </html>
-
