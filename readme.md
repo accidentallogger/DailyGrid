@@ -1,6 +1,6 @@
 
 
-#DailyGrid
+# DailyGrid
 
 A web application designed to help users manage their daily schedules, track progress toward goals, and optimize time with a detailed timetable. The app integrates goal setting, daily task management, and timetable organization in one place.
 
